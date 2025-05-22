@@ -2,7 +2,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 import json
 from src.shared.infraestructure.shared_handler import handle_healh
-
+from src.properties.infraestructure.properties_handler import handle_property
 
 
 class APIHandler(BaseHTTPRequestHandler):
@@ -16,6 +16,9 @@ class APIHandler(BaseHTTPRequestHandler):
 
             if path == '/api/health':
                 response = handle_healh()
+            
+            elif path == '/api/properties':
+                response = handle_property()
             
             else:
                 response = {

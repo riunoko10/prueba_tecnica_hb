@@ -6,3 +6,4 @@ httpx==0.28.1
 #* linting
 
 #* api
+pydantic==2.11.4
