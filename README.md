@@ -11,6 +11,8 @@
 - python-dotenv
 - pytest
 - git
+- ruff
+- pylint
 
 
 ### Abordaje del problema
