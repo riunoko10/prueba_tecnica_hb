@@ -1,9 +1,11 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 import json
-from src.shared.infraestructure.shared_handler import handle_healh
-from src.properties.infraestructure.properties_handler import handle_property
+from src.shared.infraestructure.api.v1.shared_handler import handle_healh
+from src.properties.infraestructure.api.v1.properties_handler import handle_property
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class APIHandler(BaseHTTPRequestHandler):
 
