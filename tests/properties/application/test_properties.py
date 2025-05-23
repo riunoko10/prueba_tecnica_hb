@@ -69,6 +69,15 @@ class TestProperty:
         assert len(result_property) == len(inmuebles)
 
 
+    def test_get_property_with_params(self):
+        property_repository = FakePropertyRepository()
+        property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio_construcion="2020")
+        result_property = CreateProperty(property_repository).find_properties(property_filters)
+
+        assert len(result_property) == 1
+    
+
+
 
 
     
