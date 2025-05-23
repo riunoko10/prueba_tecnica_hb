@@ -77,6 +77,14 @@ class TestProperty:
         assert len(result_property) == 1
     
 
+    def test_raise_value_error(self):
+        property_repository = FakePropertyRepository()
+
+        with pytest.raises(Exception):
+            property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio_construcion=2020)
+            result_property = CreateProperty(property_repository).find_properties(property_filters)
+            assert len(result_property) == None
+
 
 
 
