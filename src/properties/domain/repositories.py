@@ -1,18 +1,11 @@
 from abc import ABC, abstractmethod
-from src.properties.domain.value_objects import PropertyResponse, PropertyRequest
+from src.properties.domain.schemas import PropertyResponse, PropertyRequest
 
 
 class PropertyRepository(ABC):
     @abstractmethod
-    def get_all(self, params) -> list[PropertyResponse]: ...
+    def get_all_filters(self, params:PropertyRequest) -> list[PropertyResponse]: ...
 
+    @abstractmethod
+    def get_all(self) -> list[PropertyResponse]: ...
 
-
-class MySQLPropertyRepository(PropertyRepository):
-
-    def get_all(self, property:PropertyRequest)-> list[PropertyResponse]:
-        pass
-
-
-    def _extract_filters(self, property: PropertyRequest) -> str:
-        pass

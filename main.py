@@ -8,17 +8,18 @@ from src.properties.infraestructure.properties_handler import handle_property
 class APIHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-
         try:
 
             parsed_path = urlparse(self.path)
             path = parsed_path.path
+            query_string = parsed_path.query
+
 
             if path == '/api/health':
                 response = handle_healh()
             
             elif path == '/api/properties':
-                response = handle_property()
+                response = handle_property(path=path, query=query_string )
             
             else:
                 response = {
