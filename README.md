@@ -110,6 +110,19 @@ diagrama_likes
 
 ![Diagrama de arquitectura](./diagrama_likes/diagrama_er.png  "Diagrama de Entidad Relación")
 
+Query para crear la tabla `likes`:
+```sql
+CREATE TABLE likes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    property_id INT NOT NULL,
+    update_date DATE,
+    is_active TINYINT(1) DEFAULT 1,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (property_id) REFERENCES properties(id)
+);
+```
+
 los campos de la tabla son los siguientes:
 - `id`: Identificador único del registro.
 - `property_id`: Identificador del inmueble al que se le asigna el like.
