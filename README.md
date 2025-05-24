@@ -117,7 +117,7 @@ CREATE TABLE likes (
     user_id INT NOT NULL,
     property_id INT NOT NULL,
     update_date DATE,
-    is_active TINYINT(1) DEFAULT 1,
+    is_active TINYINT(1) DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (property_id) REFERENCES properties(id)
 );
