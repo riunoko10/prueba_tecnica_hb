@@ -18,6 +18,17 @@ config = {
 }
 
 class DatabaseConnection:
+    """
+    DatabaseConnection provides methods to manage MySQL database connections.
+    Attributes:
+        config (dict): Configuration parameters for the MySQL connection.
+    Methods:
+        get_connection():
+            Establishes and returns a new MySQL database connection using the provided configuration.
+            Raises an exception if the connection fails.
+        close_connection(connection):
+            Closes the given MySQL database connection if it is currently open.
+    """
     def __init__(self):
         self.config = config
 

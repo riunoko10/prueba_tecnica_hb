@@ -13,9 +13,11 @@ class PropertyState(Enum):
         raise ValueError(f"estado: '{value}' no válido. Estados permitidos: {', '.join([e.value for e in cls])}")
 
 class PropertyRequest(BaseModel):
-    anio: Union[str, None] = None
+    anio: Union[int, None] = None
     ciudad: Union[str, None] = None
     estado: Union[str, None] = None
+    
+
 
 class PropertyResponse(BaseModel):
     direccion: str

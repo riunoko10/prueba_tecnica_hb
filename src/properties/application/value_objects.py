@@ -6,6 +6,20 @@ from src.shared.infraestructure.logger import get_logger
 logger = get_logger(__name__)
 
 class CreateProperty:
+    """
+    CreateProperty is an application service class responsible for managing property-related operations.
+    Attributes:
+        _property_repository (PropertyRepository): Repository instance for accessing property data.
+    Methods:
+        __init__(property_repository: PropertyRepository):
+            Initializes the CreateProperty service with a property repository.
+        find_properties(property_filters: PropertyRequest = None) -> list[PropertyResponse]:
+            Retrieves a list of properties based on the provided filters.
+            If no filters are provided, returns all properties.
+            Handles exceptions and logs errors during the retrieval process.
+    Raises:
+        Exception: Propagates any exceptions encountered during property retrieval.
+    """
 
     def __init__(self, property_repository: PropertyRepository):
         self._property_repository = property_repository

@@ -1,0 +1,12 @@
+{
+    "ejemeplos": [
+        "http://localhost:8000/api/v1/properties",
+        "http://localhost:8000/api/v1/properties?estado=en_venta",
+        "http://localhost:8000/api/v1/properties?ciudad=Madrid",
+        "http://localhost:8000/api/v1/properties?ciudad=bogota",
+        "http://localhost:8000/api/v1/properties?anio=2020",
+        "http://localhost:8000/api/v1/properties?estado=en_venta?ciudad=bogota",
+        "http://localhost:8000/api/v1/properties?estado=en_venta?ciudad=bogota?anio=2020",
+        "http://localhost:8000/api/v1/properties?estado=vendido?ciudad=bogota?anio=2020"
+    ]
+}
