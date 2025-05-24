@@ -5,7 +5,7 @@ import httpx
 def test_health_endpoint(client):
     """Prueba el endpoint de health check"""
     try:
-        response = client.get('/api/health')
+        response = client.get('/api/v1/health')
         assert response.status_code == 200
         data = response.json()
         assert 'status' in data

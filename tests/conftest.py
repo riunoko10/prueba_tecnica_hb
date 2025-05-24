@@ -6,7 +6,7 @@ import httpx
 import threading
 import time
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from main import run_server
 
@@ -20,7 +20,7 @@ def setup_test_server():
     def is_server_running():
         try:
             with httpx.Client() as client:
-                response = client.get(f'http://localhost:{TEST_PORT}/api/health')
+                response = client.get(f'http://localhost:{TEST_PORT}/api/v1/health')
                 return response.status_code == 200
         except:
             return False
