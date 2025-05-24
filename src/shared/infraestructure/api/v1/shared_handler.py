@@ -1,16 +1,11 @@
 import json
+from src.shared.infraestructure.api.v1.response_models import Response
+from src.shared.infraestructure.logger import get_logger
 
+logger = get_logger(__name__)
 
-def handle_healh():
+def handle_health():
     try:
-        return {
-            'status': 200,
-            'content_type': 'application/json',
-            'content': json.dumps({"status": "ok"})
-        }
+        return Response.success({"status": "ok"})
     except Exception as e:
-        {
-            'status': 500,
-            'content_type': 'application/json',
-            'content': json.dumps({'error': str(e)})
-        }
+        return Response.error({'error': str(e)})

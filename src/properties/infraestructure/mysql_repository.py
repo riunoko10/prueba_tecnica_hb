@@ -4,6 +4,9 @@ from src.properties.domain.schemas import PropertyResponse, PropertyRequest
 from src.properties.infraestructure.mysql_conn import DatabaseConnection
 import os
 
+from src.shared.infraestructure.logger import get_logger
+
+logger = get_logger(__name__)
 
 class MySQLPropertyRepository(PropertyRepository):
 
@@ -26,7 +29,8 @@ class MySQLPropertyRepository(PropertyRepository):
             return list_reponse
 
         except Error as e:
-            print(f"Error al ejecutar la consulta: {e}")
+            logger.error(f"Error al ejecutar la consulta: {e}")
+            raise(e)
         finally:
             if connection.is_connected():
                 cursor.close()
@@ -43,10 +47,13 @@ class MySQLPropertyRepository(PropertyRepository):
             cursor.execute(query, tuple(params))
             results = cursor.fetchall()
 
-            return results
+            list_reponse = self._parse_data(results)
+
+            return list_reponse
 
         except Error as e:
-            print(f"Error al ejecutar la consulta: {e}")
+            logger.error(f"Error al ejecutar la consulta con parametros: {e}")
+            raise(e)
         finally:
             if connection.is_connected():
                 cursor.close()
@@ -56,8 +63,9 @@ class MySQLPropertyRepository(PropertyRepository):
     def _extract_filters(self, property: PropertyRequest) -> str:
         try:
             query_base = os.getenv("MYSQL_QUERY_BASE_PROPERTY")
-            
             params = []
+
+            logger.info(params)
 
             if property.estado:
                 query_base += " AND s.name = %s"
@@ -70,15 +78,14 @@ class MySQLPropertyRepository(PropertyRepository):
                 query_base += " AND p.city = %s"
                 params.append(property.ciudad)
             
-            if property.anio_construcion:
+            if property.anio:
                 query_base += " AND p.year = %s"
-                params.append(property.anio_construcion)
+                params.append(property.anio)
             
             return query_base, params
-        
         except Exception as e:
-            raise RuntimeError(e)
-
+            logger.error(f"Error en _extract_filters: {e}")
+            raise(e)
 
     def _parse_data(sell, raw_data:list) -> list[PropertyResponse]:
         try:
@@ -94,5 +101,6 @@ class MySQLPropertyRepository(PropertyRepository):
             return list_response_obj
 
         except Exception as e:
+            logger.error(f"Error en _parse_data: {e}")
             raise e
     

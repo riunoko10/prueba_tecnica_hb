@@ -43,17 +43,15 @@ class FakePropertyRepository(PropertyRepository):
     
     def get_all_filters(self, params):
 
-        estado = params.estado if params and hasattr(params, "estado") else None
-        resultado = [p for p in self._properties if p["estado"] == estado.value]
 
-        if params.anio_construcion:
-            resultado = [p for p in self._properties if p["año_construccion"] == estado.value]
-        
+        if hasattr(params, "estado"):
+            resultado = [p for p in self._properties if p["ciudad"] == params.estado]
+
         if hasattr(params, "ciudad"):
             resultado = [p for p in self._properties if p["ciudad"] == params.ciudad]
         
         if hasattr(params, "anio_construccion"):
-            resultado = [p for p in self._properties if p["ciudad"] == params.anio_construccion]
+            resultado = [p for p in self._properties if p["ciudad"] == params.anio]
             
         return list(resultado)
     
@@ -71,7 +69,7 @@ class TestProperty:
 
     def test_get_property_with_params(self):
         property_repository = FakePropertyRepository()
-        property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio_construcion="2020")
+        property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio="2020")
         result_property = CreateProperty(property_repository).find_properties(property_filters)
 
         assert len(result_property) == 1
@@ -81,7 +79,7 @@ class TestProperty:
         property_repository = FakePropertyRepository()
 
         with pytest.raises(Exception):
-            property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio_construcion=2020)
+            property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio=2020)
             result_property = CreateProperty(property_repository).find_properties(property_filters)
             assert len(result_property) == None
 

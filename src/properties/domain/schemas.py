@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
-from typing import Optional, Union
+from typing import Union
 
 
 class PropertyState(Enum):
@@ -8,10 +8,14 @@ class PropertyState(Enum):
     EN_VENTA = "en_venta"
     VENDIDO = "vendido"
 
+    @classmethod
+    def _missing_(cls, value):
+        raise ValueError(f"estado: '{value}' no válido. Estados permitidos: {', '.join([e.value for e in cls])}")
+
 class PropertyRequest(BaseModel):
-    anio_construcion: Union[str, None] = None
+    anio: Union[str, None] = None
     ciudad: Union[str, None] = None
-    estado: Union[PropertyState, None] = None
+    estado: Union[str, None] = None
 
 class PropertyResponse(BaseModel):
     direccion: str
