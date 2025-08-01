@@ -5,12 +5,11 @@ from src.properties.application.value_objects import PropertyService
 from src.properties.infraestructure.mysql_repository import MySQLPropertyRepository
 from src.shared.infraestructure.api.v1.response_models import Response
 from src.shared.infraestructure.logger import get_logger
-import re
 
 logger = get_logger(__name__)
 
 
-def handle_property(path, query=None) -> dict:
+def handle_property(path: str, query: str = None) -> dict:
     """
     Handles property retrieval based on the provided path and optional query parameters.
     Args:
@@ -23,23 +22,30 @@ def handle_property(path, query=None) -> dict:
         Exception: Any exception encountered during property retrieval is caught and logged, and an error response is returned.
     """
     try:
+        # Dependency injection - could be improved with a DI container
         mysql_repository = MySQLPropertyRepository()
+        property_service = PropertyService(mysql_repository)
+        
         if query:
-            property_request = get_filter(query)
-            result_property = PropertyService(mysql_repository).find_properties(property_request)
+            property_request = _parse_query_filters(query)
+            result_properties = property_service.find_properties(property_request)
         else:
-            result_property = PropertyService(mysql_repository).find_properties()
+            result_properties = property_service.find_properties()
 
-        dict_property = [prop.model_dump() for prop in result_property]
+        # Convert to dictionaries for JSON serialization
+        properties_data = [prop.model_dump() for prop in result_properties]
 
-        return  Response.success({"data": dict_property})
+        return Response.success({"data": properties_data})
 
+    except ValueError as e:
+        logger.warning(f"Validation error in handle_property: {e}")
+        return Response.error(f"Error de validación: {str(e)}", 400)
     except Exception as e:
-        logger.info(f"Ha ocurrido un error en handle_property: {e}")
-        return Response.error(str(e))
+        logger.error(f"Unexpected error in handle_property: {e}")
+        return Response.error("Error interno del servidor", 500)
 
 
-def get_filter(query):
+def _parse_query_filters(query: str) -> PropertyRequest:
     """
     Parses a query string and constructs a PropertyRequest object with the extracted filters.
     Args:
@@ -52,19 +58,24 @@ def get_filter(query):
         - The function expects the query string to contain parameters such as 'estado' and 'anio'.
         - The 'estado' parameter is converted to a PropertyState enum.
         - The 'anio' parameter is converted to an integer.
-        - Logs information if an error occurs during parsing or conversion.
     """
     try:
-        filtros = {k: v[0] for k, v in parse_qs(query, separator="?").items()}
-        if filtros.get("estado"):
-            logger.info("")
-            filtros['estado'] = PropertyState(filtros['estado'])
+        # Parse query parameters
+        filters = {k: v[0] for k, v in parse_qs(query, separator="?").items()}
+        
+        # Validate and convert estado parameter
+        if filters.get("estado"):
+            filters['estado'] = PropertyState(filters['estado'])
 
-        if filtros.get("anio"):
-            filtros['anio'] = int(filtros['anio'])
+        # Validate and convert anio parameter
+        if filters.get("anio"):
+            filters['anio'] = int(filters['anio'])
 
-        property_request = PropertyRequest(**filtros)
-        return property_request
+        return PropertyRequest(**filters)
+        
     except ValueError as e:
-        logger.info(f"Ha ocurrido un error en get_filter: {e} , valida los valores enviados")
-        raise(e)
+        logger.warning(f"Invalid filter values: {e}")
+        raise ValueError(f"Valores de filtro inválidos: {e}")
+    except Exception as e:
+        logger.error(f"Error parsing query filters: {e}")
+        raise ValueError("Error procesando los parámetros de consulta")

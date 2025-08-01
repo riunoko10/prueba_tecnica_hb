@@ -1,17 +1,19 @@
 from mysql.connector import Error
 from src.properties.domain.repositories import PropertyRepository
 from src.properties.domain.schemas import PropertyResponse, PropertyRequest
-from src.properties.infraestructure.mysql_conn import DatabaseConnection
-import os
-
+from src.shared.infraestructure.database import MySQLConnectionPool
 from src.shared.infraestructure.logger import get_logger
+import os
 
 logger = get_logger(__name__)
 
 class MySQLPropertyRepository(PropertyRepository):
+    """
+    MySQL implementation of PropertyRepository using connection pooling for better performance.
+    """
 
     def __init__(self):
-        self.db = DatabaseConnection()
+        self.db = MySQLConnectionPool()
 
 
     def get_all(self) -> list[PropertyResponse]:
@@ -39,7 +41,7 @@ class MySQLPropertyRepository(PropertyRepository):
         finally:
             if cursor:
                 cursor.close()
-            if connection and connection.is_connected():
+            if connection and self.db.is_connected(connection):
                 self.db.close_connection(connection)
 
     def get_all_filters(self, property: PropertyRequest = None) -> list[PropertyResponse]:
@@ -76,7 +78,7 @@ class MySQLPropertyRepository(PropertyRepository):
         finally:
             if cursor:
                 cursor.close()
-            if connection and connection.is_connected():
+            if connection and self.db.is_connected(connection):
                 self.db.close_connection(connection)
 
 
