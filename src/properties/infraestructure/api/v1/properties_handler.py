@@ -1,7 +1,7 @@
 import json
 from urllib.parse import parse_qs
 from src.properties.domain.schemas import PropertyRequest, PropertyState
-from src.properties.application.value_objects import CreateProperty
+from src.properties.application.value_objects import PropertyService
 from src.properties.infraestructure.mysql_repository import MySQLPropertyRepository
 from src.shared.infraestructure.api.v1.response_models import Response
 from src.shared.infraestructure.logger import get_logger
@@ -26,9 +26,9 @@ def handle_property(path, query=None) -> dict:
         mysql_repository = MySQLPropertyRepository()
         if query:
             property_request = get_filter(query)
-            result_property = CreateProperty(mysql_repository).find_properties(property_request)
+            result_property = PropertyService(mysql_repository).find_properties(property_request)
         else:
-            result_property = CreateProperty(mysql_repository).find_properties()
+            result_property = PropertyService(mysql_repository).find_properties()
 
         dict_property = [prop.model_dump() for prop in result_property]
 
