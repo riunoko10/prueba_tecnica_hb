@@ -7,6 +7,7 @@ from src.shared.infraestructure.api.v1.shared_handler import handle_health
 from src.properties.infraestructure.api.v1.properties_handler import handle_property
 from src.shared.infraestructure.logger import get_logger
 from src.shared.infraestructure.api.v1.response_models import Response
+from src.shared.infraestructure.config import config
 
 logger = get_logger(__name__)
 
@@ -78,15 +79,20 @@ def signal_handler(signum, frame):
     sys.exit(0)
 
 
-def run_server(host='localhost', port=8000, test_mode=False):
+def run_server(host: str = None, port: int = None, test_mode: bool = False):
     """
     Run the HTTP server with improved configuration and error handling.
     
     Args:
-        host (str): Host to bind the server to
-        port (int): Port to bind the server to
+        host (str): Host to bind the server to (uses config if None)
+        port (int): Port to bind the server to (uses config if None)
         test_mode (bool): If True, skip signal handlers (for testing)
     """
+    # Use configuration if not provided
+    server_config = config.get_server_config()
+    host = host or server_config['host']
+    port = port or server_config['port']
+    
     server_address = (host, port)
     
     # Register signal handlers for graceful shutdown (only in main thread)
@@ -101,6 +107,8 @@ def run_server(host='localhost', port=8000, test_mode=False):
     try:
         httpd = HTTPServer(server_address, APIHandler)
         logger.info(f'Servidor iniciado en http://{host}:{port}')
+        if config.is_debug():
+            logger.info('Modo debug activado')
         if not test_mode:
             logger.info('Presiona Ctrl+C para detener el servidor')
         httpd.serve_forever()

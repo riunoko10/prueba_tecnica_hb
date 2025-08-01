@@ -2,12 +2,10 @@ import threading
 from typing import Optional
 import mysql.connector
 from mysql.connector import Error, pooling
-import os
-from dotenv import load_dotenv
 from src.shared.infraestructure.logger import get_logger
 from src.shared.infraestructure.database.connection import DatabaseConnection
+from src.shared.infraestructure.config import config
 
-load_dotenv()
 logger = get_logger(__name__)
 
 
@@ -19,7 +17,7 @@ class MySQLConnectionPool(DatabaseConnection):
     - Connection pooling to reduce connection overhead
     - Thread-safe operations
     - Automatic connection cleanup
-    - Configuration through environment variables
+    - Configuration through centralized config system
     """
     
     _instance: Optional['MySQLConnectionPool'] = None
@@ -37,20 +35,22 @@ class MySQLConnectionPool(DatabaseConnection):
         if hasattr(self, '_initialized'):
             return
         
+        db_config = config.get_database_config()
+        
         self._config = {
-            'host': os.getenv("MYSQL_TEST_DB_HOST"),
-            'user': os.getenv("MYSQL_TEST_DB_USER"),
-            'password': os.getenv("MYSQL_TEST_DB_PASSWORD"),
-            'database': os.getenv("MYSQL_TEST_DB_NAME"),
-            'port': int(os.getenv("MYSQL_TEST_DB_PORT", 3306)),
+            'host': db_config['host'],
+            'user': db_config['user'],
+            'password': db_config['password'],
+            'database': db_config['database'],
+            'port': db_config['port'],
             'charset': 'utf8mb4',
             'autocommit': True,
             'raise_on_warnings': True
         }
         
         self._pool_config = {
-            'pool_name': 'mysql_pool',
-            'pool_size': 5,
+            'pool_name': db_config['pool_name'],
+            'pool_size': db_config['pool_size'],
             'pool_reset_session': True
         }
         
@@ -63,7 +63,7 @@ class MySQLConnectionPool(DatabaseConnection):
         try:
             pool_config = {**self._config, **self._pool_config}
             self._pool = pooling.MySQLConnectionPool(**pool_config)
-            logger.info("MySQL connection pool created successfully")
+            logger.info(f"MySQL connection pool created successfully with {self._pool_config['pool_size']} connections")
         except Error as e:
             logger.error(f"Error creating MySQL connection pool: {e}")
             raise e
@@ -104,3 +104,18 @@ class MySQLConnectionPool(DatabaseConnection):
                 logger.info("MySQL connection pool closed")
         except Exception as e:
             logger.error(f"Error closing connection pool: {e}")
+    
+    def get_pool_stats(self) -> dict:
+        """Get connection pool statistics"""
+        if not self._pool:
+            return {'pool_size': 0, 'connections_in_use': 0, 'pool_name': 'Not initialized'}
+        
+        try:
+            return {
+                'pool_size': self._pool_config['pool_size'],
+                'pool_name': self._pool_config['pool_name'],
+                'connections_available': len(getattr(self._pool, '_cnx_queue', [])),
+            }
+        except Exception as e:
+            logger.error(f"Error getting pool stats: {e}")
+            return {'error': str(e)}

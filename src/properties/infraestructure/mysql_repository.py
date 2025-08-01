@@ -3,7 +3,7 @@ from src.properties.domain.repositories import PropertyRepository
 from src.properties.domain.schemas import PropertyResponse, PropertyRequest
 from src.shared.infraestructure.database import MySQLConnectionPool
 from src.shared.infraestructure.logger import get_logger
-import os
+from src.shared.infraestructure.config import config
 
 logger = get_logger(__name__)
 
@@ -14,6 +14,7 @@ class MySQLPropertyRepository(PropertyRepository):
 
     def __init__(self):
         self.db = MySQLConnectionPool()
+        self.base_query = config.get('queries.base_property')
 
 
     def get_all(self) -> list[PropertyResponse]:
@@ -21,14 +22,13 @@ class MySQLPropertyRepository(PropertyRepository):
         cursor = None
         try:
             connection = self.db.get_connection()
-            base_query = os.getenv("MYSQL_QUERY_BASE_PROPERTY")
-            if not base_query:
-                raise ValueError("MYSQL_QUERY_BASE_PROPERTY environment variable not found")
+            if not self.base_query:
+                raise ValueError("Base query not configured")
             
-            base_query += " WHERE s.name IN ('pre_venta', 'en_venta', 'vendido')"
+            query = self.base_query + " WHERE s.name IN ('pre_venta', 'en_venta', 'vendido')"
             cursor = connection.cursor(dictionary=True)
 
-            cursor.execute(base_query)
+            cursor.execute(query)
             results = cursor.fetchall()
 
             list_response = self._parse_data(results)
@@ -95,10 +95,10 @@ class MySQLPropertyRepository(PropertyRepository):
             Exception: If any error occurs during the construction of the query or parameter list.
         """
         try:
-            query_base = os.getenv("MYSQL_QUERY_BASE_PROPERTY")
-            if not query_base:
-                raise ValueError("MYSQL_QUERY_BASE_PROPERTY environment variable not found")
+            if not self.base_query:
+                raise ValueError("Base query not configured")
             
+            query_base = self.base_query
             params = []
             where_conditions = []
 
