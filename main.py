@@ -1,3 +1,5 @@
+import signal
+import sys
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 import json
@@ -5,24 +7,20 @@ from src.shared.infraestructure.api.v1.shared_handler import handle_health
 from src.properties.infraestructure.api.v1.properties_handler import handle_property
 from src.shared.infraestructure.logger import get_logger
 from src.shared.infraestructure.api.v1.response_models import Response
+from src.shared.infraestructure.config import config
 
 logger = get_logger(__name__)
 
 class APIHandler(BaseHTTPRequestHandler):
     """
-    APIHandler is a subclass of BaseHTTPRequestHandler that handles HTTP GET requests for a RESTful API.
-    Methods
-    -------
-    _handle_response(handler_response):
-        Sends an HTTP response to the client using the provided handler_response dictionary, which should contain
-        'status', 'content_type', and 'content' keys.
-    do_GET():
-        Handles HTTP GET requests. Routes requests based on the URL path:
-            - '/api/v1/health': Calls handle_health() to return the health status of the API.
-            - '/api/v1/properties': Calls handle_property() with the current path and query string to return property data.
-            - Any other path: Returns a 404 error response.
-        Catches exceptions, logs the error, and returns an error response.
+    Enhanced APIHandler with improved error handling and CORS support.
     """
+
+    def _set_cors_headers(self):
+        """Set CORS headers for cross-origin requests"""
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
     def _handle_response(self, handler_response):
         """
@@ -39,34 +37,96 @@ class APIHandler(BaseHTTPRequestHandler):
         """
         self.send_response(handler_response['status'])
         self.send_header('Content-type', handler_response['content_type'])
+        self._set_cors_headers()
         self.end_headers()
         self.wfile.write(handler_response['content'].encode())
 
+    def do_OPTIONS(self):
+        """Handle preflight CORS requests"""
+        self.send_response(200)
+        self._set_cors_headers()
+        self.end_headers()
+
     def do_GET(self):
         try:
-
             parsed_path = urlparse(self.path)
             path = parsed_path.path
             query_string = parsed_path.query
 
+            # Route handling
             if path == '/api/v1/health':
                 response = handle_health()
             elif path == '/api/v1/properties':
                 response = handle_property(path=path, query=query_string)
             else:
                 response = Response.error('Ruta no encontrada', 404)
+            
             self._handle_response(response)
+            
         except Exception as e:
-            logger.info(f"{e}")
-            response = Response.error(str(e))
+            logger.error(f"Unexpected error in GET handler: {e}")
+            response = Response.error("Error interno del servidor", 500)
             self._handle_response(response)
 
+    def log_message(self, format, *args):
+        """Override to use our logger instead of default logging"""
+        logger.info(f"{self.address_string()} - {format % args}")
 
-def run_server():
-    server_address = ('', 8000)
-    httpd = HTTPServer(server_address, APIHandler)
-    logger.info(f'Servidor iniciado en http://localhost:8000')
-    httpd.serve_forever()
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
+    logger.info(f"Recibida señal {signum}, cerrando servidor...")
+    sys.exit(0)
+
+
+def run_server(host: str = None, port: int = None, test_mode: bool = False):
+    """
+    Run the HTTP server with improved configuration and error handling.
+    
+    Args:
+        host (str): Host to bind the server to (uses config if None)
+        port (int): Port to bind the server to (uses config if None)
+        test_mode (bool): If True, skip signal handlers (for testing)
+    """
+    # Use configuration if not provided
+    server_config = config.get_server_config()
+    host = host or server_config['host']
+    port = port or server_config['port']
+    
+    server_address = (host, port)
+    
+    # Register signal handlers for graceful shutdown (only in main thread)
+    if not test_mode:
+        try:
+            signal.signal(signal.SIGINT, signal_handler)
+            signal.signal(signal.SIGTERM, signal_handler)
+        except ValueError:
+            # Signal handlers only work in main thread
+            pass
+    
+    try:
+        httpd = HTTPServer(server_address, APIHandler)
+        logger.info(f'Servidor iniciado en http://{host}:{port}')
+        if config.is_debug():
+            logger.info('Modo debug activado')
+        if not test_mode:
+            logger.info('Presiona Ctrl+C para detener el servidor')
+        httpd.serve_forever()
+    except OSError as e:
+        logger.error(f"Error al iniciar el servidor: {e}")
+        if not test_mode:
+            sys.exit(1)
+        raise
+    except KeyboardInterrupt:
+        logger.info("Servidor detenido por el usuario")
+    except Exception as e:
+        logger.error(f"Error inesperado del servidor: {e}")
+        if not test_mode:
+            sys.exit(1)
+        raise
+    finally:
+        logger.info("Servidor cerrado")
+
 
 if __name__ == '__main__':
     run_server()

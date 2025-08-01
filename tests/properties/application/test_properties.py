@@ -2,7 +2,7 @@ import pytest
 import httpx
 from src.properties.domain.schemas import PropertyRequest, PropertyState
 from src.properties.domain.repositories import PropertyRepository
-from src.properties.application.value_objects import CreateProperty
+from src.properties.application.value_objects import PropertyService
 
 
 inmuebles = [
@@ -62,7 +62,7 @@ class FakePropertyRepository(PropertyRepository):
 class TestProperty:
     def test_get_property_without_params(self):
         property_repository = FakePropertyRepository()
-        result_property = CreateProperty(property_repository).find_properties()
+        result_property = PropertyService(property_repository).find_properties()
 
         assert len(result_property) == len(inmuebles)
 
@@ -70,7 +70,7 @@ class TestProperty:
     def test_get_property_with_params(self):
         property_repository = FakePropertyRepository()
         property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio="2020")
-        result_property = CreateProperty(property_repository).find_properties(property_filters)
+        result_property = PropertyService(property_repository).find_properties(property_filters)
 
         assert len(result_property) == 1
     
@@ -80,7 +80,7 @@ class TestProperty:
 
         with pytest.raises(Exception):
             property_filters = PropertyRequest(estado=PropertyState.EN_VENTA, ciudad="Madrid", anio=2020)
-            result_property = CreateProperty(property_repository).find_properties(property_filters)
+            result_property = PropertyService(property_repository).find_properties(property_filters)
             assert len(result_property) == None
 
 

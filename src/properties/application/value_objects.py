@@ -5,14 +5,14 @@ from src.shared.infraestructure.logger import get_logger
 
 logger = get_logger(__name__)
 
-class CreateProperty:
+class PropertyService:
     """
-    CreateProperty is an application service class responsible for managing property-related operations.
+    PropertyService is an application service class responsible for managing property-related operations.
     Attributes:
         _property_repository (PropertyRepository): Repository instance for accessing property data.
     Methods:
         __init__(property_repository: PropertyRepository):
-            Initializes the CreateProperty service with a property repository.
+            Initializes the PropertyService with a property repository.
         find_properties(property_filters: PropertyRequest = None) -> list[PropertyResponse]:
             Retrieves a list of properties based on the provided filters.
             If no filters are provided, returns all properties.
@@ -34,7 +34,7 @@ class CreateProperty:
             return all_properties
         except Exception as e:
             logger.error(f"Error al ejecutar la consulta con parametros: {e}")
-            raise(e)
+            raise e
 
 
 

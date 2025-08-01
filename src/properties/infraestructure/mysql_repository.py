@@ -1,42 +1,50 @@
 from mysql.connector import Error
 from src.properties.domain.repositories import PropertyRepository
 from src.properties.domain.schemas import PropertyResponse, PropertyRequest
-from src.properties.infraestructure.mysql_conn import DatabaseConnection
-import os
-
+from src.shared.infraestructure.database import MySQLConnectionPool
 from src.shared.infraestructure.logger import get_logger
+from src.shared.infraestructure.config import config
 
 logger = get_logger(__name__)
 
 class MySQLPropertyRepository(PropertyRepository):
+    """
+    MySQL implementation of PropertyRepository using connection pooling for better performance.
+    """
 
     def __init__(self):
-        self.db = DatabaseConnection()
+        self.db = MySQLConnectionPool()
+        self.base_query = config.get('queries.base_property')
 
 
     def get_all(self) -> list[PropertyResponse]:
+        connection = None
+        cursor = None
         try:
             connection = self.db.get_connection()
-            base_query = os.getenv("MYSQL_QUERY_BASE_PROPERTY")
-            base_query += " WHERE s.name IN ('pre_venta', 'en_venta', 'vendido')"
+            if not self.base_query:
+                raise ValueError("Base query not configured")
+            
+            query = self.base_query + " WHERE s.name IN ('pre_venta', 'en_venta', 'vendido')"
             cursor = connection.cursor(dictionary=True)
 
-            cursor.execute(base_query)
+            cursor.execute(query)
             results = cursor.fetchall()
 
-            list_reponse = self._parse_data(results)
+            list_response = self._parse_data(results)
 
-            return list_reponse
+            return list_response
 
         except Error as e:
             logger.error(f"Error al ejecutar la consulta: {e}")
-            raise(e)
+            raise e
         finally:
-            if connection.is_connected():
+            if cursor:
                 cursor.close()
+            if connection and self.db.is_connected(connection):
                 self.db.close_connection(connection)
 
-    def get_all_filters(self, property:PropertyRequest= None)-> list[PropertyResponse]:
+    def get_all_filters(self, property: PropertyRequest = None) -> list[PropertyResponse]:
         """
         Retrieves a list of properties from the database based on the provided filters.
         Args:
@@ -49,6 +57,8 @@ class MySQLPropertyRepository(PropertyRepository):
         Logs:
             Logs an error message if the query execution fails.
         """
+        connection = None
+        cursor = None
         try:
             connection = self.db.get_connection()
             cursor = connection.cursor(dictionary=True)
@@ -58,20 +68,21 @@ class MySQLPropertyRepository(PropertyRepository):
             cursor.execute(query, tuple(params))
             results = cursor.fetchall()
 
-            list_reponse = self._parse_data(results)
+            list_response = self._parse_data(results)
 
-            return list_reponse
+            return list_response
 
         except Error as e:
             logger.error(f"Error al ejecutar la consulta con parametros: {e}")
-            raise(e)
+            raise e
         finally:
-            if connection.is_connected():
+            if cursor:
                 cursor.close()
+            if connection and self.db.is_connected(connection):
                 self.db.close_connection(connection)
 
 
-    def _extract_filters(self, property: PropertyRequest) -> str:
+    def _extract_filters(self, property: PropertyRequest) -> tuple[str, list]:
         """
         Constructs a SQL query string with dynamic filters based on the provided PropertyRequest object.
         This method appends SQL conditions to a base query depending on the presence of 'estado', 'ciudad', and 'anio'
@@ -79,41 +90,49 @@ class MySQLPropertyRepository(PropertyRepository):
         Args:
             property (PropertyRequest): The property request object containing filter criteria.
         Returns:
-            Tuple[str, List[Any]]: A tuple containing the constructed SQL query string and a list of parameters for the query.
+            Tuple[str, List]: A tuple containing the constructed SQL query string and a list of parameters for the query.
         Raises:
             Exception: If any error occurs during the construction of the query or parameter list.
         """
         try:
-            query_base = os.getenv("MYSQL_QUERY_BASE_PROPERTY")
+            if not self.base_query:
+                raise ValueError("Base query not configured")
+            
+            query_base = self.base_query
             params = []
+            where_conditions = []
 
-            logger.info(params)
-
+            # Handle estado filter
             if property.estado:
-                query_base += " AND s.name = %s"
+                where_conditions.append("s.name = %s")
                 params.append(property.estado)
             else:
-                where_param = " WHERE s.name IN ('pre_venta', 'en_venta', 'vendido')"
-                query_base += where_param
+                where_conditions.append("s.name IN ('pre_venta', 'en_venta', 'vendido')")
             
+            # Handle ciudad filter
             if property.ciudad:
-                query_base += " AND p.city = %s"
+                where_conditions.append("p.city = %s")
                 params.append(property.ciudad)
             
+            # Handle año filter
             if property.anio:
-                query_base += " AND p.year = %s"
+                where_conditions.append("p.year = %s")
                 params.append(property.anio)
             
+            # Combine all conditions
+            if where_conditions:
+                query_base += " WHERE " + " AND ".join(where_conditions)
+            
             return query_base, params
+            
         except Exception as e:
             logger.error(f"Error en _extract_filters: {e}")
-            raise(e)
+            raise e
 
-    def _parse_data(sell, raw_data:list) -> list[PropertyResponse]:
+    def _parse_data(self, raw_data: list) -> list[PropertyResponse]:
         """
         Parses a list of raw data dictionaries into a list of PropertyResponse objects.
         Args:
-            sell: Unused parameter, kept for compatibility.
             raw_data (list): A list of dictionaries containing property data.
         Returns:
             list[PropertyResponse]: A list of PropertyResponse objects created from the raw data.
@@ -124,18 +143,18 @@ class MySQLPropertyRepository(PropertyRepository):
             - Errors are logged using the logger.
         """
         try:
-
             list_response_obj = []
             for data in raw_data:
                 try:
                     new_object = PropertyResponse(**data)
                     list_response_obj.append(new_object)
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.warning(f"Skipping invalid property data: {e}")
+                    continue
             
             return list_response_obj
 
         except Exception as e:
             logger.error(f"Error en _parse_data: {e}")
-            raise (e)
+            raise e
     

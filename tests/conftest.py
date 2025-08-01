@@ -26,7 +26,10 @@ def setup_test_server():
             return False
 
     if not is_server_running():
-        server_thread = threading.Thread(target=run_server, daemon=True)
+        server_thread = threading.Thread(
+            target=lambda: run_server(port=TEST_PORT, test_mode=True), 
+            daemon=True
+        )
         server_thread.start()
 
         max_retries = 5

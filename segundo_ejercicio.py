@@ -8,12 +8,11 @@ def ordenar_bloques(myArray):
                  como separadores de bloques.
     """
     # --- VALIDACIÓN ---
-    # Verificamos si el arreglo está vacío o no tiene elementos.
     if not myArray:
         print("El arreglo está vacío y no se procesará.")
-        return  # Salimos de la función si está vacío
+        return
 
-    # --- PROCESAMIENTO (Si no está vacío) ---
+    # --- PROCESAMIENTO ---
     bloques_procesados = []
     bloque_actual = []
 
@@ -21,36 +20,50 @@ def ordenar_bloques(myArray):
     for numero in myArray:
         if numero == 0:
             # Si encontramos un cero, procesamos el bloque actual
-            if not bloque_actual:
-                # Si el bloque está vacío, añadimos 'X'
-                bloques_procesados.append('X')
-            else:
-                # Si no está vacío, lo ordenamos y lo convertimos a string
-                bloque_actual.sort()
-                bloques_procesados.append(''.join(map(str, bloque_actual)))
-            # Reiniciamos el bloque actual para empezar uno nuevo
-            bloque_actual = []
+            bloques_procesados.append(_procesar_bloque(bloque_actual))
+            bloque_actual = []  # Reiniciamos el bloque actual
         else:
             # Si no es cero, lo añadimos al bloque actual
             bloque_actual.append(numero)
 
-    # No olvides procesar el último bloque después de terminar el bucle
-    if not bloque_actual:
-        bloques_procesados.append('X')
-    else:
-        bloque_actual.sort()
-        bloques_procesados.append(''.join(map(str, bloque_actual)))
+    # Procesamos el último bloque después de terminar el bucle
+    bloques_procesados.append(_procesar_bloque(bloque_actual))
 
     # Imprimimos los bloques procesados, separados por un espacio
     print(' '.join(bloques_procesados))
 
+
+def _procesar_bloque(bloque):
+    """
+    Procesa un bloque individual ordenándolo o devolviendo 'X' si está vacío.
+    
+    Args:
+        bloque: Lista de números para procesar
+        
+    Returns:
+        str: Bloque ordenado como string o 'X' si está vacío
+    """
+    if not bloque:
+        return 'X'
+    else:
+        bloque.sort()
+        return ''.join(map(str, bloque))
+
+
+def main():
+    """Función principal que ejecuta los casos de prueba"""
+    casos_prueba = [
+        [1, 3, 2, 0, 7, 8, 1, 3, 0, 6, 7, 1],
+        [2, 1, 0, 0, 3, 4],
+        [2, 1, 0, 0, 3, 4, 0, 0, 0, 1, 2, 3],
+        []
+    ]
+
+    for i, caso in enumerate(casos_prueba, 1):
+        print(f"Caso {i}: {caso}")
+        ordenar_bloques(caso)
+        print()
+
+
 if __name__ == '__main__':
-    entrada_1 = [1,3,2,0,7,8,1,3,0,6,7,1]
-    entrada_2 = [2,1,0,0,3,4]
-    entrada_3 = [2,1,0,0,3,4,0,0,0,123,1,2,3]
-    entrada_4 =[]
-
-    entradas = [entrada_1, entrada_2, entrada_3, entrada_4]
-
-    for entrada in entradas:
-        salida = ordenar_bloques(entrada)
+    main()
